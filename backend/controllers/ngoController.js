@@ -7,8 +7,9 @@ const sendEmailToAdmin = require("../utils/notifyEmail");
 const Otp = require("../models/Otp");
 const { getSessionId, sendSmsOtp } = require("../utils/sendSmsOtp");
 const { verifySmsOtp } = require("../utils/verifySmsOtp");
+const FoodDonation = require("../models/FoodDonation");
 
-// Register NGO
+// ✅ Register NGO
 const registerNgo = async (req, res) => {
   const { name, email, location, phone_no, isCertified,address } = req.body;
 
@@ -18,22 +19,22 @@ const registerNgo = async (req, res) => {
       return res.status(400).json({ message: "NGO already registered" });
     }
 
-    //  1. Check Email is verified
+    // ✅ 1. Check Email is verified
     const validEmailOtp = await Otp.findOne({ email, verified: true, type: "email" });
     if (!validEmailOtp) {
       return res.status(400).json({ message: "Email not verified" });
     }
 
-    //  2. Check Phone is verified
+    // ✅ 2. Check Phone is verified
     const validPhoneOtp = await Otp.findOne({ phone_no, verified: true, type: "phone" });
     if (!validPhoneOtp) {
       return res.status(400).json({ message: "Phone number not verified" });
     }
 
-    //  3. Clean up verified OTPs
+    // ✅ 3. Clean up verified OTPs
     await Otp.deleteMany({ $or: [{ email }, { phone_no }] });
 
-    //  4. Create NGO (No password)
+    // ✅ 4. Create NGO (No password)
     const newNgo = new Ngo({
       name,
       email,
@@ -45,7 +46,7 @@ const registerNgo = async (req, res) => {
 
     await newNgo.save();
 
-    //  5. Notify admin
+    // ✅ 5. Notify admin
     const adminEmail = "saloni45055@gmail.com";
     const subject = "New NGO Registration Pending Approval";
     const message = `Dear Admin,
@@ -61,7 +62,7 @@ A new NGO has registered and is awaiting approval. Please review the details:
 Please log in to the admin panel to approve.
 
 Regards,
-SuplusSmile Team`;
+System Notification Team`;
 
     await sendEmailToAdmin(adminEmail, subject, message);
 
@@ -72,7 +73,7 @@ SuplusSmile Team`;
   }
 };
 
-//  Login NGO
+// ✅ Login NGO
 const loginNgo = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -88,7 +89,7 @@ const loginNgo = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: ngo._id, email: ngo.email },
+      { id: ngo._id, email: ngo.email }, // 👈 'id' is used in JWT payload
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -111,7 +112,7 @@ const loginNgo = async (req, res) => {
   }
 };
 
-//  Send Phone OTP
+// ✅ Send Phone OTP
 const sendPhoneOtp = async (req, res) => {
   const { phone_no } = req.body;
 
@@ -124,7 +125,7 @@ const sendPhoneOtp = async (req, res) => {
   }
 };
 
-//  Verify Phone OTP
+// ✅ Verify Phone OTP
 const verifyPhoneOtp = async (req, res) => {
   const { phone_no, otp } = req.body;
 
@@ -139,7 +140,7 @@ const verifyPhoneOtp = async (req, res) => {
       return res.status(400).json({ message: "Incorrect or expired OTP" });
     }
 
-    //  Mark phone as verified
+    // ✅ Mark phone as verified
     await Otp.updateOne(
       { phone_no, type: "phone" },
       { verified: true },
@@ -153,13 +154,47 @@ const verifyPhoneOtp = async (req, res) => {
   }
 };
 
+// ✅ Get accepted donations for a particular NGO
+ // Adjust path as needed
+
+const getAcceptedDonationsByNgo = async (req, res) => {
+  try {
+    console.log("✅ Authenticated User:", req.user);
+
+    if (!req.user || !req.user.id) {
+      return res.status(400).json({ message: "User ID not found in request" });
+    }
+
+    const ngoObjectId = new mongoose.Types.ObjectId(req.user.id);
+
+    const acceptedDonations = await FoodDonation.find({
+      assignedNGO: ngoObjectId,
+      status: "Accepted",
+    })
+      .populate("resortId")
+      .populate("assignedNGO");
+
+    console.log("✅ Accepted Donations found:", acceptedDonations.length);
+
+    if (acceptedDonations.length === 0) {
+      return res.status(404).json({ message: "No accepted donations found" });
+    }
+
+    return res.status(200).json(acceptedDonations);
+  } catch (error) {
+    console.error(" Error fetching accepted donations:", error);
+    return res.status(500).json({ message: "Server error", error });
+  }
+};
+
+module.exports = getAcceptedDonationsByNgo;
 
 
-
-// Export all controllers
+// ✅ Export all controllers
 module.exports = {
   registerNgo,
   loginNgo,
   sendPhoneOtp,
   verifyPhoneOtp,
+  getAcceptedDonationsByNgo
 };
