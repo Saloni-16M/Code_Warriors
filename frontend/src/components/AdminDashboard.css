@@ -1,39 +1,64 @@
+/* Admin Dashboard Styling */
 .admin-dashboard {
-    max-width: 800px;
-    margin: auto;
+    max-width: 1200px;
+    margin: 40px auto;
     padding: 20px;
-    font-family: Arial, sans-serif;
-    background: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-}
-
-h2 {
-    color: #333;
-    text-align: center;
-    margin-bottom: 10px;
-    border-bottom: 2px solid #007bff;
-    padding-bottom: 5px;
-}
-
-ul {
-    list-style-type: none;
-    padding: 0;
-}
-
-li {
     background: white;
-    margin: 8px 0;
-    padding: 10px;
-    border-radius: 5px;
-    box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-p {
+.admin-dashboard h2 {
     text-align: center;
-    color: gray;
-    font-style: italic;
+    color: #2F855A;
+    margin-bottom: 20px;
+}
+
+.admin-dashboard table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.admin-dashboard th, .admin-dashboard td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+.admin-dashboard th {
+    background: #F0FAF4;
+    color: #2F855A;
+    font-weight: bold;
+}
+
+.admin-dashboard tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+.admin-dashboard input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 100%;
+}
+
+.admin-dashboard button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    background: #2F855A;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.admin-dashboard button:hover {
+    background: #276749;
+}
+
+.admin-dashboard .error {
+    color: red;
+    text-align: center;
+    margin-top: 10px;
 }

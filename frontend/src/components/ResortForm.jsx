@@ -1,25 +1,63 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const ResortForm = () => {
   const [formData, setFormData] = useState({
-    resortName: "XYZ Resort", // Assuming resort is logged in
+    resortId: "", // to be set via localStorage or props
     foodName: "",
     quantity: "",
-    expiry: "",
-    foodType: "Vegetarian",
-    location: "",
-    notes: ""
+    foodMadeDate: "",
+    type: "Vegetarian",
+    pickupAddress: "",
+    additionalInfo: "",
+    imageUrl: "" // optional
   });
+
+  // Example: Assume resortId is stored in localStorage after login
+  useEffect(() => {
+    const storedResortId = localStorage.getItem("resortId");
+    if (storedResortId) {
+      setFormData((prev) => ({ ...prev, resortId: storedResortId }));
+    }
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitted Data:", formData);
-    alert("Food donation request submitted!");
-    // Send formData to backend
+
+    try {
+      const res = await fetch("http://localhost:5000/api/resort/donate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+          // You can add Authorization header if token-based auth is used
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("Food donation request submitted successfully!");
+        console.log("Submitted:", data);
+        setFormData({
+          resortId: formData.resortId,
+          foodName: "",
+          quantity: "",
+          foodMadeDate: "",
+          type: "Vegetarian",
+          pickupAddress: "",
+          additionalInfo: "",
+          imageUrl: ""
+        });
+      } else {
+        alert(data.message || "Submission failed");
+      }
+    } catch (err) {
+      console.error("Error submitting form:", err);
+      alert("Something went wrong.");
+    }
   };
 
   return (
@@ -29,17 +67,6 @@ const ResortForm = () => {
         onSubmit={handleSubmit} 
         className="bg-white p-6 rounded-lg shadow-md w-96 space-y-4"
       >
-        <label className="block">
-          <span className="text-gray-700">Resort Name:</span>
-          <input 
-            type="text" 
-            name="resortName" 
-            value={formData.resortName} 
-            disabled 
-            className="block w-full mt-1 p-2 border rounded-md bg-gray-200"
-          />
-        </label>
-
         <label className="block">
           <span className="text-gray-700">Food Name:</span>
           <input 
@@ -65,11 +92,11 @@ const ResortForm = () => {
         </label>
 
         <label className="block">
-          <span className="text-gray-700">Expiry Time:</span>
+          <span className="text-gray-700">Food Made Date/Time:</span>
           <input 
             type="datetime-local" 
-            name="expiry" 
-            value={formData.expiry} 
+            name="foodMadeDate" 
+            value={formData.foodMadeDate} 
             onChange={handleChange} 
             required 
             className="block w-full mt-1 p-2 border rounded-md"
@@ -79,8 +106,8 @@ const ResortForm = () => {
         <label className="block">
           <span className="text-gray-700">Food Type:</span>
           <select 
-            name="foodType" 
-            value={formData.foodType} 
+            name="type" 
+            value={formData.type} 
             onChange={handleChange} 
             className="block w-full mt-1 p-2 border rounded-md"
           >
@@ -91,11 +118,11 @@ const ResortForm = () => {
         </label>
 
         <label className="block">
-          <span className="text-gray-700">Pickup Location:</span>
+          <span className="text-gray-700">Pickup Address:</span>
           <input 
             type="text" 
-            name="location" 
-            value={formData.location} 
+            name="pickupAddress" 
+            value={formData.pickupAddress} 
             onChange={handleChange} 
             required 
             className="block w-full mt-1 p-2 border rounded-md"
@@ -105,8 +132,20 @@ const ResortForm = () => {
         <label className="block">
           <span className="text-gray-700">Special Notes (Optional):</span>
           <textarea 
-            name="notes" 
-            value={formData.notes} 
+            name="additionalInfo" 
+            value={formData.additionalInfo} 
+            onChange={handleChange} 
+            className="block w-full mt-1 p-2 border rounded-md"
+          />
+        </label>
+
+        {/* Optional image URL input */}
+        <label className="block">
+          <span className="text-gray-700">Image URL (Optional):</span>
+          <input 
+            type="text" 
+            name="imageUrl" 
+            value={formData.imageUrl} 
             onChange={handleChange} 
             className="block w-full mt-1 p-2 border rounded-md"
           />

@@ -4,9 +4,8 @@ import { jsPDF } from "jspdf";
 
 const ActiveRequests = () => {
   const location = useLocation();
-  const requestDetails = location.state || {}; // Getting the data from navigation
+  const requestDetails = location.state || {};
 
-  // Get the current date in DD-MM-YYYY format
   const currentDate = new Date().toLocaleDateString("en-GB");
 
   const generatePDF = () => {
@@ -16,7 +15,7 @@ const ActiveRequests = () => {
     doc.text("Food Pickup Receipt", 70, 20);
 
     doc.setFontSize(12);
-    doc.text(`Date: ${currentDate}`, 20, 30); // Add Date
+    doc.text(`Date: ${currentDate}`, 20, 30);
     doc.text(`Resort Name: ${requestDetails.name}`, 20, 40);
     doc.text(`Food Name: ${requestDetails.food}`, 20, 50);
     doc.text(`Quantity: ${requestDetails.quantity}`, 20, 60);
@@ -36,11 +35,11 @@ const ActiveRequests = () => {
         <p><strong>Food:</strong> {requestDetails.food}</p>
         <p><strong>Quantity:</strong> {requestDetails.quantity}</p>
         <p><strong>Type:</strong> {requestDetails.foodType}</p>
-        <p><strong>Date:</strong> {currentDate}</p> {/* Show Date on UI */}
+        <p><strong>Date:</strong> {currentDate}</p>
         <p><strong>Status:</strong> Accepted</p>
 
-        <button 
-          onClick={generatePDF} 
+        <button
+          onClick={generatePDF}
           className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg"
         >
           Confirm Receipt

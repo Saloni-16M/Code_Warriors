@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchNgos, fetchResorts, updateNgo, updateResort } from "../services/apiService";
+import { fetchNgos, fetchResorts, approveNgo, approveResort, updateNgo, updateResort } from "../services/apiService";
 import "./AdminDashboard.css";
 
 const AdminDashboard = () => {
@@ -8,30 +8,21 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [comments, setComments] = useState({});
-    const [approvalStatus, setApprovalStatus] = useState({});
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [ngosData, resortsData] = await Promise.all([fetchNgos(), fetchResorts()]);
+                const ngosData = await fetchNgos();
+                const resortsData = await fetchResorts();
                 setNgos(ngosData);
                 setResorts(resortsData);
 
+                // Store existing comments in state
                 const initialComments = {};
-                const initialApprovalStatus = {};
-
-                ngosData.forEach(ngo => {
-                    initialComments[ngo._id] = ngo.adminComments || "";
-                    initialApprovalStatus[ngo._id] = ngo.isApproved ? "true" : "false";
-                });
-
-                resortsData.forEach(resort => {
-                    initialComments[resort._id] = resort.adminComments || "";
-                    initialApprovalStatus[resort._id] = resort.isApproved ? "true" : "false";
-                });
+                ngosData.forEach(ngo => initialComments[ngo._id] = ngo.adminComments || "");
+                resortsData.forEach(resort => initialComments[resort._id] = resort.adminComments || "");
 
                 setComments(initialComments);
-                setApprovalStatus(initialApprovalStatus);
             } catch (err) {
                 setError("Failed to load data. Please try again.");
             } finally {
@@ -41,57 +32,45 @@ const AdminDashboard = () => {
         fetchData();
     }, []);
 
-    const handleVerify = async (id, type) => {
+    const handleApprovalChange = async (id, type) => {
         try {
-            const updateFunc = type === "ngo" ? updateNgo : updateResort;
-            const updatedData = await updateFunc(id, { isVerified: true });
-
             if (type === "ngo") {
-                setNgos(prevNgos => prevNgos.map(ngo => (ngo._id === id ? updatedData : ngo)));
+                const updatedNgo = await approveNgo(id, { isApproved: true });
+                setNgos(prev => prev.map(ngo =>
+                    ngo._id === id ? { ...ngo, adminApprovalStatus: "Approved", loginId: updatedNgo.loginId } : ngo
+                ));
             } else {
-                setResorts(prevResorts => prevResorts.map(resort => (resort._id === id ? updatedData : resort)));
+                const updatedResort = await approveResort(id, { isApproved: true });
+                setResorts(prev => prev.map(resort =>
+                    resort._id === id ? { ...resort, adminApprovalStatus: "Approved", loginId: updatedResort.loginId } : resort
+                ));
             }
-        } catch (err) {
-            alert(`Failed to verify ${type}`);
-        }
-    };
-
-    const handleCommentChange = (id, value) => {
-        setComments(prev => ({ ...prev, [id]: value }));
-    };
-
-    const handleApprovalChange = (id, value) => {
-        setApprovalStatus(prev => ({ ...prev, [id]: value }));
-    };
-    const handleSave = async (id, type) => {
-        const comment = comments[id]?.trim() || "";
-        const isApproved = approvalStatus[id] === "true";
-    
-        try {
-            const entityData = type === "ngo"
-                ? ngos.find(ngo => ngo._id === id)
-                : resorts.find(resort => resort._id === id);
-    
-            const updateFunc = type === "ngo" ? updateNgo : updateResort;
-            const updatedData = await updateFunc(id, {
-                isApproved,
-                adminComments: comment,
-                phone_no: entityData?.phone_no || "1234567890" // Ensure phone_no is sent for both NGOs and Resorts
-            });
-    
-            if (type === "ngo") {
-                setNgos(prevNgos => prevNgos.map(ngo => (ngo._id === id ? updatedData : ngo)));
-            } else {
-                setResorts(prevResorts => prevResorts.map(resort => (resort._id === id ? updatedData : resort)));
-            }
-    
-            alert(`${type.toUpperCase()} updated successfully!`);
+            alert(`${type === "ngo" ? "NGO" : "Resort"} approved successfully!`);
         } catch (error) {
-            alert(`Error updating ${type}`);
+            alert(`Error approving ${type}`);
         }
     };
-    
-    
+
+    const handleSave = async (id, type) => {
+        try {
+            if (type === "ngo") {
+                await updateNgo(id, { adminComments: comments[id] });
+            } else {
+                await updateResort(id, { adminComments: comments[id] });
+            }
+
+            // Fetch updated data to reflect changes
+            const updatedNgos = await fetchNgos();
+            const updatedResorts = await fetchResorts();
+            setNgos(updatedNgos);
+            setResorts(updatedResorts);
+
+            alert(`${type === "ngo" ? "NGO" : "Resort"} comment saved!`);
+        } catch (error) {
+            alert(`Error saving ${type} comment.`);
+        }
+    };
+
     if (loading) return <p>Loading data...</p>;
     if (error) return <p className="error">{error}</p>;
 
@@ -105,8 +84,8 @@ const AdminDashboard = () => {
                             <th>Name</th>
                             <th>Email</th>
                             <th>Location</th>
-                            <th>Status</th>
                             <th>Admin Comments</th>
+                            <th>Add Comment</th>
                             <th>Approval</th>
                             <th>Actions</th>
                         </tr>
@@ -117,29 +96,26 @@ const AdminDashboard = () => {
                                 <td>{ngo.name}</td>
                                 <td>{ngo.email}</td>
                                 <td>{ngo.location}</td>
-                                <td>{ngo.isVerified ? "Verified" : "Pending"}</td>
+                                <td>{ngo.adminComments || "No comments yet"}</td>
                                 <td>
-                                    <input
-                                        type="text"
-                                        value={comments[ngo._id] || ""}
-                                        onChange={(e) => handleCommentChange(ngo._id, e.target.value)}
-                                    />
-                                </td>
-                                <td>
-                                    <select
-                                        value={approvalStatus[ngo._id] || ""}
-                                        onChange={(e) => handleApprovalChange(ngo._id, e.target.value)}
-                                    >
-                                        <option value="">Select</option>
-                                        <option value="true">Approved</option>
-                                        <option value="false">Rejected</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    {!ngo.isVerified && (
-                                        <button onClick={() => handleVerify(ngo._id, "ngo")}>Verify</button>
+                                    {!ngo.adminComments && (
+                                        <input
+                                            type="text"
+                                            value={comments[ngo._id]}
+                                            onChange={(e) =>
+                                                setComments(prev => ({ ...prev, [ngo._id]: e.target.value }))
+                                            }
+                                        />
                                     )}
-                                    <button onClick={() => handleSave(ngo._id, "ngo")}>Save</button>
+                                </td>
+                                <td>{ngo.adminApprovalStatus}</td>
+                                <td>
+                                    {ngo.adminApprovalStatus !== "Approved" && (
+                                        <button onClick={() => handleApprovalChange(ngo._id, "ngo")}>Approve</button>
+                                    )}
+                                    {!ngo.adminComments && (
+                                        <button onClick={() => handleSave(ngo._id, "ngo")}>Save</button>
+                                    )}
                                 </td>
                             </tr>
                         ))}
@@ -157,8 +133,8 @@ const AdminDashboard = () => {
                             <th>Name</th>
                             <th>Email</th>
                             <th>Location</th>
-                            <th>Status</th>
                             <th>Admin Comments</th>
+                            <th>Add Comment</th>
                             <th>Approval</th>
                             <th>Actions</th>
                         </tr>
@@ -169,29 +145,26 @@ const AdminDashboard = () => {
                                 <td>{resort.name}</td>
                                 <td>{resort.email}</td>
                                 <td>{resort.location}</td>
-                                <td>{resort.isVerified ? "Verified" : "Pending"}</td>
+                                <td>{resort.adminComments || "No comments yet"}</td>
                                 <td>
-                                    <input
-                                        type="text"
-                                        value={comments[resort._id] || ""}
-                                        onChange={(e) => handleCommentChange(resort._id, e.target.value)}
-                                    />
-                                </td>
-                                <td>
-                                    <select
-                                        value={approvalStatus[resort._id] || ""}
-                                        onChange={(e) => handleApprovalChange(resort._id, e.target.value)}
-                                    >
-                                        <option value="">Select</option>
-                                        <option value="true">Approved</option>
-                                        <option value="false">Rejected</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    {!resort.isVerified && (
-                                        <button onClick={() => handleVerify(resort._id, "resort")}>Verify</button>
+                                    {!resort.adminComments && (
+                                        <input
+                                            type="text"
+                                            value={comments[resort._id]}
+                                            onChange={(e) =>
+                                                setComments(prev => ({ ...prev, [resort._id]: e.target.value }))
+                                            }
+                                        />
                                     )}
-                                    <button onClick={() => handleSave(resort._id, "resort")}>Save</button>
+                                </td>
+                                <td>{resort.adminApprovalStatus}</td>
+                                <td>
+                                    {resort.adminApprovalStatus !== "Approved" && (
+                                        <button onClick={() => handleApprovalChange(resort._id, "resort")}>Approve</button>
+                                    )}
+                                    {!resort.adminComments && (
+                                        <button onClick={() => handleSave(resort._id, "resort")}>Save</button>
+                                    )}
                                 </td>
                             </tr>
                         ))}

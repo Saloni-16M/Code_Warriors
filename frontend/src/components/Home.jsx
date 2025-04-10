@@ -1,21 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
-import ngo1 from "../assets/ngo1.jpg";
-import ngo2 from "../assets/ngo2.jpg";
-import ngo3 from "../assets/ngo3.jpg";
+import { Link } from "react-router-dom";
 
 // Define an array of image paths for the auto-sliding carousel
-const images = ["ngo1.jpg", "ngo2.jpg", "ngo3.jpg"];
+const images = ["ngo.jpeg", "resort.jpeg", "community.jpeg"];
 
 const Home = () => {
   // State to keep track of the current image index in the carousel
   const [currentIndex, setCurrentIndex] = useState(0);
   
   // State to manage whether the dropdown menu is open or not
-  const [isDrop, setIsDrop] = useState(false);
-  
+  const [isSignupDrop, setIsSignupDrop] = useState(false);
+  const [isLoginDrop, setIsLoginDrop] = useState(false);  
   // Reference for detecting clicks outside the dropdown
-  const dropdownRef = useRef(null);
-
+  const signupDropdownRef = useRef(null);
+  const loginDropdownRef = useRef(null);
   // Auto-slide images every 3 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -29,21 +27,26 @@ const Home = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Effect to close the dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      // Check if the click is outside the dropdown
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDrop(false);
-      }
-    };
+ // Effect to close dropdowns when clicking outside
+ useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (
+      signupDropdownRef.current &&
+      !signupDropdownRef.current.contains(event.target)
+    ) {
+      setIsSignupDrop(false);
+    }
+    if (
+      loginDropdownRef.current &&
+      !loginDropdownRef.current.contains(event.target)
+    ) {
+      setIsLoginDrop(false);
+    }
+  };
 
-    // Listen for clicks anywhere on the document
-    document.addEventListener("mousedown", handleClickOutside);
-    
-    // Cleanup function to remove the event listener when component unmounts
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
 
   // Function to smoothly scroll to a section with the given id
   const scrollToSection = (id) => {
@@ -78,28 +81,54 @@ const Home = () => {
             About Us
           </button>
 
-          {/* Signup Dropdown Menu */}
-          <div className="relative" ref={dropdownRef}>
-            {/* Button to toggle dropdown visibility */}
+
+          {/* Signup Dropdown */}
+          <div className="relative" ref={signupDropdownRef}>
             <button
               className="text-gray-700 hover:text-green-700 transition"
-              onClick={() => setIsDrop(!isDrop)}
+              onClick={() => {
+                setIsSignupDrop(!isSignupDrop);
+                setIsLoginDrop(false); // Close login dropdown when opening signup
+              }}
             >
               Signup ▼
             </button>
 
-            {/* Dropdown menu (only shown when isDrop is true) */}
-            {isDrop && (
+            {isSignupDrop && (
               <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-md overflow-hidden">
-                {/* Signup options */}
-                <button className="block w-full px-4 py-2 text-gray-700 hover:bg-gray-200">
+                <Link to="/ngo/register" className="block px-4 py-2 text-gray-700 hover:bg-gray-200">
                   Signup as NGO
-                </button>
-                <button className="block w-full px-4 py-2 text-gray-700 hover:bg-gray-200">
+                </Link>
+                <Link to="/resort/register" className="block px-4 py-2 text-gray-700 hover:bg-gray-200">
                   Signup as Resort
-                </button>
+                </Link>
               </div>
             )}
+          </div>
+
+          {/* Login Dropdown */}
+          <div className="relative" ref={loginDropdownRef}>
+            <button
+              className="text-gray-700 hover:text-green-700 transition"
+              onClick={() => {
+                setIsLoginDrop(!isLoginDrop);
+                setIsSignupDrop(false); // Close signup dropdown when opening login
+              }}
+            >
+              Login ▼
+            </button>
+
+            {isLoginDrop && (
+              <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-md overflow-hidden">
+                <Link to="/ngo/login" className="block px-4 py-2 text-gray-700 hover:bg-gray-200">
+                  Login as NGO
+                </Link>
+                <Link to="/resort/login" className="block px-4 py-2 text-gray-700 hover:bg-gray-200">
+                  Login as Resort
+                </Link>
+              </div>
+            )}
+          
           </div>
         </div>
       </nav>
@@ -144,8 +173,7 @@ const Home = () => {
       <h2 className="text-green-700 text-2xl font-semibold mb-4">
         NGO-Resort Connect
       </h2>
-      
-  
+    
 
       {/* Mission Section */}
       <div id="mission" className="w-full max-w-3xl p-6 bg-white shadow-md rounded-lg mt-10">
