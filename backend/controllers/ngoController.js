@@ -1,0 +1,165 @@
+const Ngo = require("../models/Ngo");
+const mongoose = require("mongoose");
+
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const sendEmailToAdmin = require("../utils/notifyEmail");
+const Otp = require("../models/Otp");
+const { getSessionId, sendSmsOtp } = require("../utils/sendSmsOtp");
+const { verifySmsOtp } = require("../utils/verifySmsOtp");
+
+// Register NGO
+const registerNgo = async (req, res) => {
+  const { name, email, location, phone_no, isCertified,address } = req.body;
+
+  try {
+    const existingNgo = await Ngo.findOne({ email });
+    if (existingNgo) {
+      return res.status(400).json({ message: "NGO already registered" });
+    }
+
+    //  1. Check Email is verified
+    const validEmailOtp = await Otp.findOne({ email, verified: true, type: "email" });
+    if (!validEmailOtp) {
+      return res.status(400).json({ message: "Email not verified" });
+    }
+
+    //  2. Check Phone is verified
+    const validPhoneOtp = await Otp.findOne({ phone_no, verified: true, type: "phone" });
+    if (!validPhoneOtp) {
+      return res.status(400).json({ message: "Phone number not verified" });
+    }
+
+    //  3. Clean up verified OTPs
+    await Otp.deleteMany({ $or: [{ email }, { phone_no }] });
+
+    //  4. Create NGO (No password)
+    const newNgo = new Ngo({
+      name,
+      email,
+      location,
+      phone_no,
+      isCertified,address,
+      adminApprovalStatus: "Pending"
+    });
+
+    await newNgo.save();
+
+    //  5. Notify admin
+    const adminEmail = "saloni45055@gmail.com";
+    const subject = "New NGO Registration Pending Approval";
+    const message = `Dear Admin,
+
+A new NGO has registered and is awaiting approval. Please review the details:
+
+🔹 NGO Name: ${name}
+🔹 Email: ${email}
+🔹 Location: ${location}
+🔹 Phone Number: ${phone_no}
+🔹 Certified: ${isCertified ? "Yes" : "No"}
+
+Please log in to the admin panel to approve.
+
+Regards,
+SuplusSmile Team`;
+
+    await sendEmailToAdmin(adminEmail, subject, message);
+
+    res.status(201).json({ message: "NGO registered, awaiting admin approval" });
+  } catch (error) {
+    console.error("Register NGO error:", error);
+    res.status(500).json({ message: "Server Error", error });
+  }
+};
+
+//  Login NGO
+const loginNgo = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const ngo = await Ngo.findOne({ email, adminApprovalStatus: "Approved" });
+    if (!ngo) {
+      return res.status(401).json({ message: "Invalid email or NGO not approved" });
+    }
+
+    const isMatch = await bcrypt.compare(password, ngo.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid password" });
+    }
+
+    const token = jwt.sign(
+      { id: ngo._id, email: ngo.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      ngo: {
+        _id: ngo._id,
+        name: ngo.name,
+        email: ngo.email,
+        location: ngo.location,
+        phone_no: ngo.phone_no,
+        isCertified: ngo.isCertified
+      }
+    });
+  } catch (error) {
+    console.error("Error in loginNgo:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+//  Send Phone OTP
+const sendPhoneOtp = async (req, res) => {
+  const { phone_no } = req.body;
+
+  try {
+    await sendSmsOtp(phone_no);
+    res.status(200).json({ message: "OTP sent successfully" });
+  } catch (err) {
+    console.error("Phone OTP Send Error:", err);
+    res.status(500).json({ message: "Failed to send OTP", error: err.message });
+  }
+};
+
+//  Verify Phone OTP
+const verifyPhoneOtp = async (req, res) => {
+  const { phone_no, otp } = req.body;
+
+  try {
+    const sessionId = getSessionId(phone_no);
+    if (!sessionId) {
+      return res.status(400).json({ message: "Session not found. Please request a new OTP." });
+    }
+
+    const isValid = await verifySmsOtp(sessionId, otp);
+    if (!isValid) {
+      return res.status(400).json({ message: "Incorrect or expired OTP" });
+    }
+
+    //  Mark phone as verified
+    await Otp.updateOne(
+      { phone_no, type: "phone" },
+      { verified: true },
+      { upsert: true }
+    );
+
+    res.status(200).json({ message: "Phone number verified successfully" });
+  } catch (err) {
+    console.error("Phone OTP Verification Error:", err);
+    res.status(500).json({ message: "OTP verification failed", error: err.message });
+  }
+};
+
+
+
+
+// Export all controllers
+module.exports = {
+  registerNgo,
+  loginNgo,
+  sendPhoneOtp,
+  verifyPhoneOtp,
+};
