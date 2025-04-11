@@ -3,6 +3,8 @@ import { FaBell, FaSearch } from "react-icons/fa";
 import axios from "axios";
 import ResortForm from "./ResortForm";
 import ResortCard from "./ResortCard";
+import Fuse from 'fuse.js'
+
 
 const Resort = () => {
   const [searchQuery, setSearchQuery] = useState("");

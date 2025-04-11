@@ -88,8 +88,9 @@ const Home = () => {
               className="text-gray-700 hover:text-green-700 transition"
               onClick={() => {
                 setIsSignupDrop(!isSignupDrop);
-                setIsLoginDrop(false); // Close login dropdown when opening signup
+                setIsLoginDrop(false); // Login dropdown ko close kar do
               }}
+              
             >
               Signup ▼
             </button>

@@ -1,0 +1,95 @@
+.home-container {
+    font-family: "Segoe UI", sans-serif;
+    text-align: center;
+    background: #fdfdfd;
+  }
+  
+  .navbar {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    background: #00796b;
+    color: white;
+    align-items: center;
+  }
+  
+  .logo {
+    font-size: 1.8rem;
+  }
+  
+  .nav-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+  
+  .dropdown {
+    position: relative;
+  }
+  
+  .dropdown button {
+    background: white;
+    color: #00796b;
+    border: none;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 5px;
+  }
+  
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+    border-radius: 5px;
+    z-index: 10;
+    overflow: hidden;
+  }
+  
+  .dropdown-menu a {
+    display: block;
+    padding: 0.7rem 1rem;
+    color: #00796b;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .dropdown-menu a:hover {
+    background-color: #e0f2f1;
+  }
+  
+  .carousel {
+    width: 100%;
+    height: 400px;
+    overflow: hidden;
+    margin-top: 1rem;
+  }
+  
+  .carousel img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .content {
+    padding: 2rem;
+    max-width: 800px;
+    margin: auto;
+  }
+  
+  .cta-button {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.8rem 1.5rem;
+    background-color: #00796b;
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  
+  .cta-button:hover {
+    background-color: #004d40;
+  }
+  
